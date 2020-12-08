@@ -68,6 +68,16 @@ class AbstractTemplate(ShareableOrgMixin, BaseConfig):
             'whether new configurations will have this template enabled by default'
         ),
     )
+    required = models.BooleanField(
+        _('required'),
+        default=False,
+        db_index=True,
+        help_text=_(
+            'if checked, will force the assignment of this template to all the '
+            'devices of the organization (if no organization is selected, it will '
+            'be required for every device in the system)'
+        ),
+    )
     auto_cert = models.BooleanField(
         _('auto certificate'),
         default=default_auto_cert,
@@ -137,6 +147,7 @@ class AbstractTemplate(ShareableOrgMixin, BaseConfig):
         * ensures VPN is selected if type is VPN
         * clears VPN specific fields if type is not VPN
         * automatically determines configuration if necessary
+        * if flagged as required forces it also to be default
         """
         self._validate_org_relation('vpn')
         if not self.default_values:
@@ -154,6 +165,8 @@ class AbstractTemplate(ShareableOrgMixin, BaseConfig):
             self.auto_cert = False
         if self.type == 'vpn' and not self.config:
             self.config = self.vpn.auto_client(auto_cert=self.auto_cert)
+        if self.required and not self.default:
+            self.default = True
         super().clean(*args, **kwargs)
         if not self.config:
             raise ValidationError(_('The configuration field cannot be empty.'))

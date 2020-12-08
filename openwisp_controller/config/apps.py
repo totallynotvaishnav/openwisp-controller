@@ -52,6 +52,11 @@ class ConfigConfig(AppConfig):
             dispatch_uid='config.templates_changed',
         )
         m2m_changed.connect(
+            self.config_model.enforce_required_templates,
+            sender=self.config_model.templates.through,
+            dispatch_uid='template.enforce_required_template',
+        )
+        m2m_changed.connect(
             self.config_model.manage_vpn_clients,
             sender=self.config_model.templates.through,
             dispatch_uid='config.manage_vpn_clients',

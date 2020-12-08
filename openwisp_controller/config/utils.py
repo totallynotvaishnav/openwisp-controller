@@ -190,5 +190,5 @@ def get_default_templates_queryset(organization_id, queryset=None, model=None):
         queryset = model.objects.filter(default=True)
     queryset = queryset.filter(
         Q(organization_id=organization_id) | Q(organization_id=None)
-    )
+    ).order_by('-required', 'name')
     return queryset

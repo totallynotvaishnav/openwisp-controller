@@ -3,7 +3,8 @@ from unittest import mock
 
 from celery.exceptions import SoftTimeLimitExceeded
 from django.contrib.auth import get_user_model
-from django.core.exceptions import ValidationError
+from django.core.exceptions import PermissionDenied, ValidationError
+from django.db import transaction
 from django.test import TestCase, TransactionTestCase
 from netjsonconfig import OpenWrt
 from swapper import load_model
@@ -379,6 +380,44 @@ class TestTemplate(
         t = self._create_template(default_values={'test': 'value'})
         system_context = t.get_system_context()
         self.assertNotIn('test', system_context.keys())
+
+    def test_required_templates(self):
+        dummy_config = {'interfaces': []}
+        t4 = self._create_template(name='default4', config=dummy_config, default=True)
+        t2 = self._create_template(name='required2', config=dummy_config, required=True)
+        t1 = self._create_template(name='required1', config=dummy_config, required=True)
+        t3 = self._create_template(name='default3', config=dummy_config, default=True)
+
+        with self.subTest('required makes it also default'):
+            self.assertTrue(t1.default)
+            t1.default = False
+            t1.full_clean()
+            self.assertTrue(t1.default)
+
+        with self.subTest('test required templates ordering'):
+            config = self._create_config(
+                device=self._create_device(name='test-required')
+            )
+            self.assertTrue(config.templates.filter(pk=t1.pk).exists())
+            self.assertTrue(config.templates.filter(pk=t2.pk).exists())
+            templates = config.templates.all()
+            self.assertEqual(templates[0], t1)
+            self.assertEqual(templates[1], t2)
+            self.assertEqual(templates[2], t3)
+            self.assertEqual(templates[3], t4)
+
+        with self.subTest('removing a required template from a device raises error'):
+            with transaction.atomic():
+                with self.assertRaises(PermissionDenied) as context:
+                    config.templates.remove(t1)
+            self.assertIn('Required templates', str(context.exception))
+
+        with self.subTest('clearing required templates is ineffective (sortedm2m)'):
+            t5 = self._create_template(name='not-required', required=False)
+            config.templates.clear()
+            config.templates.add(t5)
+            self.assertTrue(config.templates.filter(pk=t1.pk).exists())
+            self.assertTrue(config.templates.filter(pk=t2.pk).exists())
 
 
 class TestTemplateTransaction(
