@@ -419,6 +419,27 @@ class TestTemplate(
             self.assertTrue(config.templates.filter(pk=t1.pk).exists())
             self.assertTrue(config.templates.filter(pk=t2.pk).exists())
 
+    def test_required_vpn_template_corner_case(self):
+        org = self._get_org()
+        vpn = self._create_vpn()
+        t = self._create_template(
+            name='vpn-test',
+            type='vpn',
+            vpn=vpn,
+            auto_cert=True,
+            required=True,
+            default=True,
+        )
+        c = self._create_config(organization=org)
+        vpn_client = c.vpnclient_set.first()
+        self.assertIsNotNone(vpn_client)
+        # simulate reordering via sortedm2m
+        c.templates.clear()
+        c.templates.add(t)
+        # ensure no error is raised
+        # (ValidationError: {'__all__': ['VPN client with this Config and Vpn already exists.']})
+        self.assertIsNotNone(vpn_client)
+
 
 class TestTemplateTransaction(
     TestOrganizationMixin,
