@@ -9,6 +9,8 @@ from openwisp_notifications.types import (
 )
 from swapper import get_model_name, load_model
 
+from openwisp_utils.admin_theme import register_dashboard_element
+
 from . import settings as app_settings
 
 # ensure Device.hardware_id field is not flagged as unique
@@ -27,6 +29,18 @@ class ConfigConfig(AppConfig):
         self.add_default_menu_items()
         self.register_notification_types()
         self.add_ignore_notification_widget()
+
+        register_dashboard_element(
+            'Configuration Status',
+            {
+                'query_params': {
+                    'app_label': 'config',
+                    'model': 'device',
+                    'group_by': 'config__status',
+                },
+                'colors': {'applied': 'green', 'modified': 'orange', 'error': 'red'},
+            },
+        )
 
     def __setmodels__(self):
         self.config_model = load_model('config', 'Config')
