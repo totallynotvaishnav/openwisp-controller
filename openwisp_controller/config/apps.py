@@ -139,8 +139,9 @@ class ConfigConfig(AppConfig):
 
     def register_dashboard_element(self):
         register_dashboard_element(
-            'Configuration Status',
-            {
+            position=1,
+            element_config={
+                'name': 'Configuration Status',
                 'query_params': {
                     'app_label': 'config',
                     'model': 'device',
