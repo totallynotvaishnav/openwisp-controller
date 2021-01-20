@@ -29,18 +29,7 @@ class ConfigConfig(AppConfig):
         self.add_default_menu_items()
         self.register_notification_types()
         self.add_ignore_notification_widget()
-
-        register_dashboard_element(
-            'Configuration Status',
-            {
-                'query_params': {
-                    'app_label': 'config',
-                    'model': 'device',
-                    'group_by': 'config__status',
-                },
-                'colors': {'applied': 'green', 'modified': 'orange', 'error': 'red'},
-            },
-        )
+        self.register_dashboard_element()
 
     def __setmodels__(self):
         self.config_model = load_model('config', 'Config')
@@ -147,3 +136,16 @@ class ConfigConfig(AppConfig):
                 'OPENWISP_NOTIFICATIONS_IGNORE_ENABLED_ADMIN',
                 obj_notification_widget,
             )
+
+    def register_dashboard_element(self):
+        register_dashboard_element(
+            'Configuration Status',
+            {
+                'query_params': {
+                    'app_label': 'config',
+                    'model': 'device',
+                    'group_by': 'config__status',
+                },
+                'colors': {'applied': 'green', 'modified': 'orange', 'error': 'red'},
+            },
+        )
